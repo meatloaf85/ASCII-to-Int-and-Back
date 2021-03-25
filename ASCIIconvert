@@ -1,0 +1,470 @@
+TITLE Ultimate String-Integer Displayer 9000     (Proj6_gatesjar.asm)
+
+; Author: Jarrett Gates
+; Last Modified: 3/16/2021
+; OSU email address: gatesjar@oregonstate.edu
+; Course number/section:   CS271 Section 400
+; Project Number: 6                Due Date: 3/14/2021
+; Description: This program gets a string of numbers from the user, converts the string of numbers
+; to its integer counterpart and then reconverts it back to its string counterpart.
+; It will also calculat the sum and average of the integers and display them to the console using ReadVal
+; Each element is also displayed to the console using ReadVal.
+
+
+INCLUDE Irvine32.inc
+
+STRINGSIZE = 200
+POSLIMIT = 2147483647
+NEGLIMIT = -2147483648
+
+.data
+
+inString		BYTE	STRINGSIZE DUP(?)
+outString		BYTE	STRINGSIZE DUP(?)
+introduction	BYTE	"Ultimate String-Integer Displayer 9000 by Jarrett Gates",13,10,0
+instructions	BYTE	"Provide me with 10 signed integers."
+				BYTE	" Each number must be small enough to fit inside a 32-bit SDWORD",13,10
+				BYTE	"After 10 integers are inputted, I will show you a list of said integers, their sum and average.",13,10,0
+userPrompt		BYTE	"Please enter a signed number: ",0
+errorMsg		BYTE	"ERROR: You entered an invalid number. Try again.",13,10,0
+arrayMsg		BYTE	"Here is a list of the valid numbers entered:",13,10,0
+sumMsg			BYTE	"The sum of your valid numbers is: ",0
+averageMsg		BYTE	"The average is: ",0
+signedIntArr	SDWORD 11 DUP(?)
+sum				SDWORD 0
+avg				DWORD 0
+passVar			DWORD 0
+countToTenAvg	dword 0
+comma		BYTE ",",0
+space		BYTE " ",0
+prevNum			dword 0
+lengthIntArr	dword LENGTHOF signedIntArr
+sumArr			SDWORD 1 DUP(?)
+avgArr			SDWORD 1 DUP(?)
+lengthSumArr	dword lengthof sumArr
+lengthAvgArr	dword lengthof avgArr
+.code
+
+
+main PROC
+;------------------------------------------------------------------------------------------
+; Name: mGetString
+;
+; Gets user input in a form of a string
+;
+; Preconditions: Must specifiy offset and buffer size
+;
+; Postconditions: CHanges ESI and EAX
+;
+; Receives:
+;	stringAddr = string address
+;	stringSize = size of string to accomdate
+;
+; Returns: Generated string address and number of characters in string
+;------------------------------------------------------------------------------------------
+	mGetString MACRO stringAddr:REQ, stringSize:REQ
+	PUSH	EDX
+	PUSH	ECX
+	MOV		EDX, stringAddr         
+	MOV		ECX, stringSize       
+	CALL	ReadString
+	MOV		ESI, EDX   ;address of value into ESI
+	;MOV		sLength, EAX    ;num of chars 
+	POP		ECX
+	POP		EDX
+	ENDM
+
+
+;------------------------------------------------------------------------------------------
+; Name: mDisplayString
+;
+; Displays the user input
+;
+; Preconditions: Must specifiy offset
+;
+; Receives:
+;	stringToDisplay = string address
+;	
+;------------------------------------------------------------------------------------------
+	mDisplayString MACRO stringToDisplay:REQ
+	PUSH	EDX
+	MOV		EDX, stringToDisplay
+	CALL	WriteString
+	POP		EDX
+	ENDM
+
+	mDisplayString OFFSET introduction
+	CALL	Crlf
+	mDisplayString OFFSET instructions
+	CALL	Crlf
+
+	MOV		ECX, 10
+_ReadValTenTimes:
+	mDisplayString OFFSET userPrompt
+	PUSH	passVar
+	PUSH	OFFSET inString
+	PUSH	OFFSET signedIntArr
+	PUSH	OFFSET errormsg
+	PUSH	OFFSET userPrompt
+	CALL	ReadVal
+	ADD		passVar, 4
+	LOOP	_ReadValTenTimes
+	CALL	Crlf
+
+	MOV		passVar, 0
+	MOV		ECX, 10
+	mDisplayString OFFSET arrayMsg
+
+_WriteValTenTimes:
+	PUSH	lengthIntArr
+	PUSH	OFFSET comma
+	PUSH	OFFSET space
+	PUSH	prevNum
+	PUSH	countToTenAvg
+	PUSH	passvar
+	PUSH	OFFSET outString
+	PUSH	OFFSET signedIntArr
+	PUSH	OFFSET errormsg
+	PUSH	OFFSET userPrompt
+	CALL	WriteVal
+	INC		countToTenAvg
+	MOV		prevNum, EBX
+	LOOP	_WriteValTenTimes
+	CALL	Crlf
+	CALL	Crlf
+
+	;calculates sum from the interger array and displays it with writeval
+	mDisplayString OFFSET sumMsg
+	MOV		ECX, lengthIntArr
+	DEC		ECX
+	MOV		EDI, OFFSET signedIntArr
+
+_CalculateSum:
+	MOV		eax, [edi]
+	ADD		sum, eax
+	ADD		edi, 4
+	LOOP	 _CalculateSum
+	MOV		edi, offset sumArr
+	MOV		eax, sum
+	MOV		[edi], eax
+	MOV		countToTenAvg, 0
+	MOV		prevNum, 0
+
+	PUSH	lengthSumArr
+	PUSH	OFFSET comma
+	PUSH	OFFSET space
+	PUSH	prevNum
+	PUSH	countToTenAvg
+	PUSH	passvar
+	PUSH	OFFSET outString
+	PUSH	OFFSET sumArr
+	PUSH	OFFSET errormsg
+	PUSH	OFFSET userPrompt
+	CALL	WriteVal
+	CALL	Crlf
+	CALL	Crlf
+
+	;calculates the average from the sum variable and displays it
+	mDisplayString OFFSET averageMsg
+_CalculateAvg:
+	MOV		edx, 0
+	mov		eax, sum
+	CMP		eax, 0
+	JL		_NegDivide
+	JMP		_PosDivide
+
+_NegDivide:
+	mov		ebx, 10
+	CDQ
+	IDIV		ebx
+	mov		avg, eax
+
+	mov		edi, offset avgArr
+	mov		eax, avg
+	mov		[edi], eax
+	JMP _Start
+
+_PosDivide:
+	mov		ebx, 10
+	DIV		ebx
+	mov		avg, eax
+
+	mov		edi, offset avgArr
+	mov		eax, avg
+	mov		[edi], eax
+
+_Start:
+	mov		countToTenAvg, 0
+	mov		prevNum, 0
+
+	PUSH	lengthAvgArr
+	PUSH	OFFSET comma
+	PUSH	OFFSET space
+	PUSH	prevNum
+	PUSH	countToTenAvg
+	PUSH	passvar
+	PUSH	OFFSET outString
+	PUSH	OFFSET avgArr
+	PUSH	OFFSET errormsg
+	PUSH	OFFSET userPrompt
+	CALL	WriteVal
+	CALL	Crlf
+	CALL	Crlf
+
+	Invoke ExitProcess,0	; exit to operating system
+main ENDP
+
+;------------------------------------------------------------------------------------------
+; Name: ReadVal
+;
+; Takes a string and converts it into its corresponding value
+;
+; Preconditions: 
+;
+; Receives:
+;	[EBP+24] = number of times passed through int array
+;	[EBP+20] = string address to read from
+;	[EBP+16] = address of integer array to store into
+;	[EBP+12] = address of error message
+;	[EBP+8] = address of user prompt message
+;
+; Returns: fills the integer array with the string value
+;------------------------------------------------------------------------------------------
+ReadVal PROC
+	LOCAL userNum:sdword, counter:sdword, minus:dword
+	;PUSH EBP
+	;MOV EBP, ESP
+	PUSH	EAX
+	PUSH	EDX
+	PUSH	EBX
+	PUSH	ESI
+	PUSH	EDI
+	PUSH	ECX
+	
+_Repeat:
+	mGetString [ebP+20], STRINGSIZE
+
+	MOV		EDI, [ebP+16]
+	MOV		ecx, eax   ;number of characters in the string to go through
+	MOV		EAX, 0
+	MOV		EDX, 0
+	MOV		EBX, 0
+	mov		userNum, 0
+	mov		counter, 0
+	mov		minus, 0
+	CLD
+
+	;goes through the first character to ensure if plus or minus is there, then its OK
+_FirstIterate:
+	LODSb
+	CMP		AL, 43   ;+
+	JE		_CheckPlus
+	CMP		AL, 45   ;-
+	JE		_CheckMinus
+	CMP		 AL, 48
+	JL		_Invalid
+	CMP		AL, 57
+	JG		_Invalid
+	CMP		AL, ' '
+	JE		_Invalid
+	JMP		_forward
+
+	;iterate through the string, checking for invalid characters
+_TenValues:
+	LODSb
+	CMP		AL, 43   ;+
+	JE		_Invalid
+	CMP		AL, 45   ;-
+	JE		_Invalid
+	CMP		 AL, 48
+	JL		_Invalid
+	CMP		AL, 57
+	JG		_Invalid
+	CMP		AL, ' '
+	JE		_Invalid
+
+	;converts the ascii characters to their integer counterpart
+_forward:
+	SUB		AL, 48
+	MOVZX	ebx, AL
+	PUSH	EBX
+	mov		eax, counter 
+	MOV		EBX, 10
+	MUL		EBX
+	POP		EDX
+	MOV		userNum, EDX
+	ADD		EAX, userNum
+	MOV		counter, EAX
+	JO		_Invalid
+	LOOP	_TenValues
+
+	;After conversion is complete, determine if a negative should be applied and insert
+_AfterConversion:
+	CMP		minus, 1
+	JE		_AddNegative
+	MOV		EBX, counter
+	ADD		EDI, [ebP+24] ;passVar
+	mov		counter, 0
+	mov		eax, 0
+	MOV		[EDI], EBX
+	JMP		_Return
+
+	;displays invalid messages
+_Invalid:
+	mDisplayString [ebP+12]
+	CALL	Crlf
+	mDisplayString [ebP+8]
+	JMP		_Repeat
+
+	;skips over plus sign if its the first character
+_CheckPlus:
+	DEC		ECX
+	JMP		_TenValues
+
+	;adds 1 to minus variable to keep track of a negative number
+_CheckMinus:
+	MOV		minus, 1
+	DEC		ECX
+	JMP		_TenValues
+
+	; if minus is 1, convert integer to negative
+_AddNegative:
+	IMUL	eax, counter, -1
+	JO		_Invalid
+	MOV		counter, eax
+	CMP		counter, NEGLIMIT
+	JL		_Invalid
+	MOV		minus, 0
+	JMP		_AfterConversion
+
+_Return:
+	POP		ECX
+	POP		EDI
+	POP		ESI
+	POP		EBX
+	POP		EDX
+	POP		EAX
+
+	RET		20
+
+ReadVal ENDP
+
+;------------------------------------------------------------------------------------------
+; Name: WriteVal
+;
+; Takes an integer arry and converts it into its ascii (string) character 
+;
+; Preconditions: integer array is type DWORD
+;
+; Receives:
+;	[EBP+44] = number of elements in the integer array
+;	[EBP+40] = holds address for the comma character
+;	[EBP+36] = holds address for the space character
+;	[EBP+32] = how many characters the previous string had
+;	[EBP+28] = number of times passed through int array and used to determine puncuation
+;	[EBP+24] = number of times passed through int array
+;	[EBP+20] = string address to write to
+;	[EBP+16] = address of integer array to read from
+;	[EBP+12] = address of error message
+;	[EBP+8] = address of user prompt message
+;
+; Returns: fills the string with ascii characters converted from the integer array
+;------------------------------------------------------------------------------------------
+WriteVal PROC
+	LOCAL counter:sdword, elementStr:DWORd
+	PUSH	EAX
+	PUSH	EDX
+	PUSH	EBX
+	PUSH	ESI
+	PUSH	EDI
+	PUSH	ECX
+	
+	;takes passed integer array and puts it into esi, takes local string and puts it into edi
+	MOV		ESI, [ebp+16] 
+	LEA		EDI, elementStr
+	
+	;grabs the relevant element from esi and puts it into eax
+	MOV		eax, 4
+	MOV		ebx, [ebp+28]   ;count to ten avg
+	MUL		ebx
+	ADD		ESI, eax
+	MOV		eax, [esi]
+
+	;converts int to its ascii char depending if eax is pos or neg
+	MOV		ebx, 0 
+	MOV		ecx, 10
+	CMP		EAX, 0
+	JL		_NegInt
+	JMP		_ConvertAndPush
+
+	;converts to positive if neg and puts minus sign in front
+_NegInt:
+	IMUL	EAX, -1
+_NegConvertAndPush:
+	MOV		edx, 0
+	DIV		ecx
+	PUSH	edx
+	INC		ebx
+	CMP		eax, 0
+	jnz		_NegConvertAndPush
+	MOV		counter, 0
+	MOV		ECX, EBX
+	MOV		AL, 45
+	STOSB    ;put negative in front
+_NegPopAndStore:
+	POP		eax
+	ADD		al, 48
+	STOSB
+	LOOP	_NegPopAndStore
+	MOV		al, 0
+	STOSB
+	JMP		_Return
+
+	;convert and push if positive
+_ConvertAndPush:
+	MOV		edx, 0
+	DIV		ecx
+	PUSH	edx
+	INC		ebx
+	CMP		eax, 0
+	jnz		_ConvertAndPush
+	MOV		counter, 0
+	MOV		ECX, EBX
+
+	;pops from stack and stores into edi, appends null terminater
+_PopAndStore:
+	POP		eax
+	ADD		al, 48
+	STOSB
+	LOOP	_PopAndStore
+	MOV		al, 0
+	STOSB
+	
+	;inserts converted string into the string variable
+_Return:
+	MOV		edx, 0
+	lea		edx, elementStr
+	mDisplayString edx
+	mov		elementStr, 0
+	mov		ebx, [ebp+28] 
+	CMP		ebx, 9
+	JE		_NoCommaOrSpace
+	mov		ebx, [ebp+44]
+	CMP		ebx, 1
+	JE		_NoCommaOrSpace
+	
+	;displays comma and space
+	mDisplayString [EBP+40]
+	mDisplayString [EBP+36]
+
+_NoCommaOrSpace:
+	POP		ECX
+	POP		EDI
+	POP		ESI
+	POP		EBX
+	POP		EDX
+	POP		EAX
+	RET		40
+WriteVal ENDP
+
+END main
