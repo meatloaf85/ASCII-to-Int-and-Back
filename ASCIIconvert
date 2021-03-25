@@ -1,10 +1,6 @@
-TITLE Ultimate String-Integer Displayer 9000     (Proj6_gatesjar.asm)
+TITLE ASCII to Int and Back
 
-; Author: Jarrett Gates
-; Last Modified: 3/16/2021
-; OSU email address: gatesjar@oregonstate.edu
-; Course number/section:   CS271 Section 400
-; Project Number: 6                Due Date: 3/14/2021
+; Author: Jarrett 
 ; Description: This program gets a string of numbers from the user, converts the string of numbers
 ; to its integer counterpart and then reconverts it back to its string counterpart.
 ; It will also calculat the sum and average of the integers and display them to the console using ReadVal
@@ -21,7 +17,7 @@ NEGLIMIT = -2147483648
 
 inString		BYTE	STRINGSIZE DUP(?)
 outString		BYTE	STRINGSIZE DUP(?)
-introduction	BYTE	"Ultimate String-Integer Displayer 9000 by Jarrett Gates",13,10,0
+introduction	BYTE	"ASCII to Int and Back by Jarrett ",13,10,0
 instructions	BYTE	"Provide me with 10 signed integers."
 				BYTE	" Each number must be small enough to fit inside a 32-bit SDWORD",13,10
 				BYTE	"After 10 integers are inputted, I will show you a list of said integers, their sum and average.",13,10,0
